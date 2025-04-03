@@ -2,12 +2,20 @@ import streamlit as st
 import pandas as pd
 import re
 from datetime import datetime, timedelta
+from io import BytesIO
 
 # Increase the maximum number of cells that can be styled
 pd.set_option("styler.render.max_elements", 1000000)  # Set to 1 million to handle large datasets
 
 # Set page to wide mode at the very beginning
 st.set_page_config(layout="wide")
+
+def to_excel(df):
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False)
+    output.seek(0)
+    return output.read()
 
 def analyze_keywords(df):
     # Convert all column names to strings
@@ -631,6 +639,14 @@ def main():
                             use_container_width=True
                         )
                         
+                        # Add Excel download button for Revenue section
+                        st.download_button(
+                            label="📥 Download Revenue Data as Excel",
+                            data=to_excel(top_revenue),
+                            file_name=f"top_revenue_{selected_date}.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        )
+                        
                         st.subheader("Top Clicks")
                         st.dataframe(
                             top_clicks.style.format({
@@ -639,6 +655,14 @@ def main():
                                 'Clicks': '{:,.0f}'
                             }),
                             use_container_width=True
+                        )
+                        
+                        # Add Excel download button for Clicks section
+                        st.download_button(
+                            label="📥 Download Clicks Data as Excel",
+                            data=to_excel(top_clicks),
+                            file_name=f"top_clicks_{selected_date}.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         )
                         
                         st.subheader("Top RPC")
@@ -651,19 +675,26 @@ def main():
                             use_container_width=True
                         )
                         
-                        # Add download button
+                        # Add Excel download button for RPC section
+                        st.download_button(
+                            label="📥 Download RPC Data as Excel",
+                            data=to_excel(top_rpc),
+                            file_name=f"top_rpc_{selected_date}.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        )
+                        
+                        # Add download button for all data combined
                         combined_results = pd.concat([
                             top_revenue.assign(Category='Top Revenue', Date=selected_date),
                             top_clicks.assign(Category='Top Clicks', Date=selected_date),
                             top_rpc.assign(Category='Top RPC', Date=selected_date)
                         ])
                         
-                        csv = combined_results.to_csv(index=False)
                         st.download_button(
-                            label="Download Top Performers Data",
-                            data=csv,
-                            file_name=f"top_keywords_{selected_date}.csv",
-                            mime="text/csv"
+                            label="📥 Download All Data as Excel",
+                            data=to_excel(combined_results),
+                            file_name=f"all_top_keywords_{selected_date}.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         )
                 
                 # Tab 2: All Partners Analysis
