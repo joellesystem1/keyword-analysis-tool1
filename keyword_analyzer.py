@@ -17,6 +17,37 @@ def to_excel(df):
     output.seek(0)
     return output.read()
 
+def to_excel_column(df, column_name):
+    """Convert a single column to Excel with proper formatting"""
+    output = BytesIO()
+    # Create a new dataframe with just the columns we want
+    if column_name == 'Revenue':
+        export_df = df[['Keyword', 'Partner', 'Revenue']]
+    elif column_name == 'Clicks':
+        export_df = df[['Keyword', 'Partner', 'Clicks']]
+    elif column_name == 'RPC':
+        export_df = df[['Keyword', 'Partner', 'RPC']]
+    
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        export_df.to_excel(writer, index=False)
+        # Get the worksheet
+        worksheet = writer.sheets['Sheet1']
+        # Auto-adjust columns width
+        for column in worksheet.columns:
+            max_length = 0
+            column = [cell for cell in column]
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(cell.value)
+                except:
+                    pass
+            adjusted_width = (max_length + 2)
+            worksheet.column_dimensions[column[0].column_letter].width = adjusted_width
+    
+    output.seek(0)
+    return output.read()
+
 def analyze_keywords(df):
     # Convert all column names to strings
     df.columns = df.columns.astype(str)
@@ -630,58 +661,79 @@ def main():
                     
                     if top_revenue is not None:
                         st.subheader("Top Revenue")
-                        st.dataframe(
-                            top_revenue.style.format({
-                                'Revenue': '${:,.2f}',
-                                'RPC': '${:,.2f}',
-                                'Clicks': '{:,.0f}'
-                            }),
-                            use_container_width=True
-                        )
                         
-                        # Add Excel download button for Revenue section
-                        st.download_button(
-                            label="📥 Download Revenue Data as Excel",
-                            data=to_excel(top_revenue),
-                            file_name=f"top_revenue_{selected_date}.xlsx",
-                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                        )
+                        # Create columns for the table and download button
+                        col1, col2 = st.columns([3, 1])
+                        
+                        with col1:
+                            st.dataframe(
+                                top_revenue.style.format({
+                                    'Revenue': '${:,.2f}',
+                                    'RPC': '${:,.2f}',
+                                    'Clicks': '{:,.0f}'
+                                }),
+                                use_container_width=True
+                            )
+                        
+                        with col2:
+                            st.download_button(
+                                label="📥 Download Revenue",
+                                data=to_excel_column(top_revenue, 'Revenue'),
+                                file_name=f"revenue_only_{selected_date}.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                help="Download just the Revenue data as Excel"
+                            )
                         
                         st.subheader("Top Clicks")
-                        st.dataframe(
-                            top_clicks.style.format({
-                                'Revenue': '${:,.2f}',
-                                'RPC': '${:,.2f}',
-                                'Clicks': '{:,.0f}'
-                            }),
-                            use_container_width=True
-                        )
                         
-                        # Add Excel download button for Clicks section
-                        st.download_button(
-                            label="📥 Download Clicks Data as Excel",
-                            data=to_excel(top_clicks),
-                            file_name=f"top_clicks_{selected_date}.xlsx",
-                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                        )
+                        # Create columns for the table and download button
+                        col1, col2 = st.columns([3, 1])
+                        
+                        with col1:
+                            st.dataframe(
+                                top_clicks.style.format({
+                                    'Revenue': '${:,.2f}',
+                                    'RPC': '${:,.2f}',
+                                    'Clicks': '{:,.0f}'
+                                }),
+                                use_container_width=True
+                            )
+                        
+                        with col2:
+                            st.download_button(
+                                label="📥 Download Clicks",
+                                data=to_excel_column(top_clicks, 'Clicks'),
+                                file_name=f"clicks_only_{selected_date}.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                help="Download just the Clicks data as Excel"
+                            )
                         
                         st.subheader("Top RPC")
-                        st.dataframe(
-                            top_rpc.style.format({
-                                'Revenue': '${:,.2f}',
-                                'RPC': '${:,.2f}',
-                                'Clicks': '{:,.0f}'
-                            }),
-                            use_container_width=True
-                        )
                         
-                        # Add Excel download button for RPC section
-                        st.download_button(
-                            label="📥 Download RPC Data as Excel",
-                            data=to_excel(top_rpc),
-                            file_name=f"top_rpc_{selected_date}.xlsx",
-                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                        )
+                        # Create columns for the table and download button
+                        col1, col2 = st.columns([3, 1])
+                        
+                        with col1:
+                            st.dataframe(
+                                top_rpc.style.format({
+                                    'Revenue': '${:,.2f}',
+                                    'RPC': '${:,.2f}',
+                                    'Clicks': '{:,.0f}'
+                                }),
+                                use_container_width=True
+                            )
+                        
+                        with col2:
+                            st.download_button(
+                                label="📥 Download RPC",
+                                data=to_excel_column(top_rpc, 'RPC'),
+                                file_name=f"rpc_only_{selected_date}.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                help="Download just the RPC data as Excel"
+                            )
+                        
+                        # Add a separator before the combined download
+                        st.markdown("---")
                         
                         # Add download button for all data combined
                         combined_results = pd.concat([
@@ -691,10 +743,11 @@ def main():
                         ])
                         
                         st.download_button(
-                            label="📥 Download All Data as Excel",
+                            label="📥 Download All Data",
                             data=to_excel(combined_results),
-                            file_name=f"all_top_keywords_{selected_date}.xlsx",
-                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            file_name=f"all_data_{selected_date}.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            help="Download all data combined as Excel"
                         )
                 
                 # Tab 2: All Partners Analysis
